@@ -19,20 +19,20 @@ from math import sqrt, pi
 
 
 # ============================================================================
-# Column aliases (anonymised dataset)
+# Column aliases (anonymised / masked dataset)
 # ============================================================================
-COL_DAY = "f3"          # days from baseline
-COL_MONTH = "f4"        # month
-COL_AMOUNT = "f5"       # transaction amount
-COL_OS = "f6"           # device OS
-COL_DEPOSIT = "f7"      # deposit history flag (0/1)
-COL_STORE = "f9"        # store ID
-COL_ZIP = "f10"         # full ZIP code
-COL_ZIP3 = "f11"        # ZIP prefix (3 digits)
-COL_EMAIL = "f12"       # email domain
-COL_PREF = "f13"        # prefecture code
-COL_ADDR = "f14"        # address (user identifier)
-COL_LABEL = "f16"       # fraud label (0/1)
+COL_DAY = "f3"          # temporal feature (ordinal)
+COL_MONTH = "f4"        # temporal feature (cyclic)
+COL_AMOUNT = "f5"       # numerical feature
+COL_OS = "f6"           # categorical feature A
+COL_DEPOSIT = "f7"      # binary feature
+COL_STORE = "f9"        # categorical feature B
+COL_ZIP = "f10"         # categorical feature C
+COL_ZIP3 = "f11"        # categorical feature D (coarser granularity of C)
+COL_EMAIL = "f12"       # categorical feature E
+COL_PREF = "f13"        # categorical feature F
+COL_ADDR = "f14"        # user identifier
+COL_LABEL = "f16"       # target (0/1)
 
 
 # ============================================================================

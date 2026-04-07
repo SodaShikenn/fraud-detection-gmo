@@ -3,9 +3,9 @@ SHAP Feature Importance Analysis
 
 Generate SHAP summary plots to understand model decision-making.
 Key findings from the report:
-  - f7 (deposit history) is the most important feature
-  - f7xf5 (no-deposit x amount interaction) has very high importance
-  - fraud_ratio_store_7d provides temporal risk signals per store
+  - f7 (binary feature) is the most important feature
+  - f7xf5 (binary x numerical interaction) has very high importance
+  - Per-category fraud ratios provide temporal risk signals
 
 Usage:
     python -m experiments.run_shap_analysis --data data/processed.csv
