@@ -1,6 +1,6 @@
 # Fraud Detection for E-Commerce Payments
 
-Machine learning pipeline for detecting fraudulent transactions in e-commerce payment data. Developed in the [Advanced Course](https://dss.i.u-tokyo.ac.jp/advance/) of the **University of Tokyo [Data Scientist Training Program (DSS)](https://dss.i.u-tokyo.ac.jp/)**, 2025, in collaboration with **GMO Payment Gateway**. The Advanced Course involves group-based analysis of real business data provided by partner companies, covering problem discovery, analysis proposal, implementation, and client feedback.
+Machine learning pipeline for detecting fraudulent transactions in e-commerce payment data. Developed in the [Advanced Course](https://dss.i.u-tokyo.ac.jp/advance/) of the **University of Tokyo [Data Science School (DSS)](https://dss.i.u-tokyo.ac.jp/)**, 2025, in collaboration with **GMO Payment Gateway**. The Advanced Course involves group-based analysis of real business data provided by partner companies, covering problem discovery, analysis proposal, implementation, and client feedback.
 
 > [Japanese README (main)](README.md)
 
