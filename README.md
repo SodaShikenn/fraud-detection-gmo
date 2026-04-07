@@ -121,7 +121,3 @@ python -m experiments.run_threshold_optimization --data data/processed.csv
 # 5. SHAP解析
 python -m experiments.run_shap_analysis --data data/processed.csv
 ```
-
-## ライセンス
-
-東京大学における学術目的で開発されました。
