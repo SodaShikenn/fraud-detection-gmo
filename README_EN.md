@@ -22,22 +22,7 @@ Key requirement from GMO: **all detected frauds should be true frauds** (high pr
 
 > The dataset is confidential and not included in this repository.
 
-~65,000 anonymised e-commerce transactions over 397 days. All fields are masked.
-
-| Column | Content | Description |
-|---|---|---|
-| f3 | Days from purchase date | Days from reference date (temporal ordering) |
-| f4 | Purchase month | Month (0-11) |
-| f5 | Purchase amount | Transaction amount (integer) |
-| f6 | Device OS | OS type ID |
-| f7 | Deposit history | 0=has deposit history (higher trust), 1=none |
-| f9 | Store | Store ID |
-| f10 | Postal code | Full postal code |
-| f11 | Postal code prefix | First 3 digits (regional prefix) |
-| f12 | Email domain | Email domain ID |
-| f13 | Prefecture code | Prefecture |
-| f14 | Address | Used as user identifier |
-| **f16** | **Fraud status** | **Target: 0=legitimate, 1=fraud** |
+~65,000 anonymised e-commerce transactions over 397 days. All columns are masked (f3, f4, ...) and consist of temporal, numerical, categorical, and binary features, plus the target variable (fraud flag).
 
 ### Temporal Distribution Shift
 
@@ -74,40 +59,19 @@ Starting from only 16 raw features, we engineer 65 additional features in five c
 
 ### 1. Base Statistics (5)
 
-Compute each user's (address) normal purchase behaviour from past transactions, then quantify deviations.
-
-| Feature | Description |
-|---|---|
-| `purchase_count_cumulative` | Cumulative purchase count per user |
-| `past_mean_amount` | Historical mean purchase amount |
-| `past_std_amount` | Historical std of purchase amount |
-| `mu_personal` | Log-normal mu (per user) |
-| `sigma_personal` | Log-normal sigma (per user) |
+Compute each user's normal behaviour from past transactions, then quantify deviations. Includes cumulative purchase count, historical mean and standard deviation, and log-normal distribution parameters (mu, sigma) per user.
 
 ### 2. Feature Structure (10)
 
-Frequency counts of categorical values and their co-occurrences.
-
-- Single frequency: `f6_count`, `f9_count`, `f10_count`, `f11_count`, `f12_count`
-- Pairwise co-occurrence: `f6xf9_count`, `f6xf12_count`, `f9xf12_count`
-- Triple co-occurrence: `f6xf9xf12_count`
-- Frequency product: `f9_count_x_f12_count`
+Frequency counts of categorical features and their co-occurrences. Single frequency (5), pairwise co-occurrence (3), triple co-occurrence (1), and frequency product (1).
 
 ### 3. Rule-based (7)
 
-Domain-knowledge-driven features capturing amount digit patterns and category changes.
-
-| Feature | Description |
-|---|---|
-| `f5_end_with_5`, `f5_end_with_0`, `f5_end_with_00` | Amount digit patterns (round numbers) |
-| `f6_changed`, `f9_changed`, `f12_changed` | Change flags for OS, store, email from previous transaction |
-| **`f7xf5`** | **Returns purchase amount when f7=0 (no deposit history), else 0. Isolates "high-amount transactions by users with no payment track record"** |
+Domain-knowledge-driven features: numerical value digit patterns (3), category change flags from previous transaction (3), and a **binary x numerical interaction term** (1) that explicitly isolates "high-value transactions by users with a specific attribute".
 
 ### 4. Feature Enhancement (10)
 
-Dividing amount by log-frequency highlights "unusually high amount for the observed frequency".
-
-`f5_x_{count_col}` = f5 / log1p(count) for every count-type feature.
+Dividing a numerical feature by log-frequency highlights "unusually high value for the observed frequency". Computed for every count-type feature.
 
 ### 5. Statistical Model (33)
 
@@ -115,13 +79,13 @@ Probability and anomaly-based features:
 
 | Subgroup | Count | Description |
 |---|---|---|
-| Fraud ratios (4 groups x 3 windows) | 20 | Per-prefecture, store, email domain, and OS fraud rates over past 7d/30d/all-time, with data counts |
-| Global amount LLR | 4 | `log_f5`, `f5_loglik_global_y0`, `f5_loglik_global_y1`, `f5_amount_llr_global` |
-| Personal amount LLR | 2 | `f5_loglik_personal`, `f5_amount_llr_personal` |
-| Inter-transaction interval LLR | 5 | `delta_days`, `log_delta`, `delta_days_loglik_y0`, `delta_days_loglik_y1`, `delta_days_llr` |
-| Deviation from past mean | 2 | `amount_ratio_to_past_mean`, `amount_std_score` |
+| Per-category fraud ratios (4 groups x 3 windows) | 20 | Per-category fraud rates over past 7d/30d/all-time, with data counts |
+| Global LLR | 4 | Log-likelihood ratio for numerical feature (population distribution) |
+| Personal LLR | 2 | Log-likelihood ratio for numerical feature (per-user distribution) |
+| Inter-transaction interval LLR | 5 | Log-likelihood ratio for transaction intervals |
+| Deviation from past mean | 2 | Ratio and standardised score vs. user's historical mean |
 
-LLR (log-likelihood ratio) quantifies whether a transaction amount or interval is closer to the "legitimate" or "fraud" distribution, assuming log-normal distributions estimated via expanding windows.
+LLR (log-likelihood ratio) quantifies whether an observed value is closer to the "legitimate" or "fraud" distribution, assuming log-normal distributions estimated via expanding windows.
 
 ## Handling Class Imbalance
 
@@ -151,20 +115,7 @@ Recursive Feature Elimination using LightGBM gain importance (Algorithm 1):
 
 Applied across 7 rolling folds, the optimal feature count **varied from 12 to 70**, reflecting temporal distribution changes. This highlights the importance of fold-independent feature selection.
 
-Final selection: **47 robust features** (selected in >= 4/7 folds). The 10 features selected in all 7 folds:
-
-| Feature | Selected | Description |
-|---|---|---|
-| `f7` | 7/7 | Deposit history |
-| `f9` | 7/7 | Store |
-| `f10` | 7/7 | Postal code |
-| `f11` | 7/7 | Postal prefix |
-| `f12` | 7/7 | Email domain |
-| `f7xf5` | 7/7 | No-deposit x amount |
-| `f5_x_f6_count` | 7/7 | Amount / log(OS frequency) |
-| `fraud_ratio_store_7d` | 7/7 | Store fraud rate (past 7 days) |
-| `f5_x_f6xf12_count` | 7/7 | Amount / log(OS x email co-occurrence) |
-| `fraud_ratio_email_all` | 7/7 | Email domain fraud rate (all-time) |
+Final selection: **47 robust features** (selected in >= 4/7 folds). The 10 features selected in all 7 folds consist of raw categorical features (5), the interaction term (1), feature enhancements (2), and per-category fraud ratios (2).
 
 ## Model Results
 
@@ -197,15 +148,11 @@ SHAP (SHapley Additive exPlanations) values quantitatively explain model decisio
 
 ### Key Findings
 
-1. **`f7` (deposit history)** -- highest overall contribution. `f7=0` (has deposit history) pushes toward fraud; `f7=1` (no history) pushes toward legitimate. Seemingly counterintuitive, but coherent when combined with the interaction term.
+1. **Binary feature** -- highest overall contribution. Users with a specific attribute push toward fraud. Seemingly counterintuitive on its own, but coherent when combined with the interaction term.
 
-2. **`f7xf5` (no-deposit x amount)** -- the most important finding of this study. Feature design:
-   - `f7=1` (no deposit history): `f7xf5 = purchase amount`
-   - `f7=0` (has deposit history): `f7xf5 = 0`
+2. **Binary x numerical interaction term** -- the most important finding of this study. This feature explicitly isolates "high-value transactions by users with a specific attribute". SHAP confirms extremely strong fraud-direction contribution. This demonstrates that "high value = always fraud" is too simplistic; proper feature design can capture the underlying fraud structure.
 
-   This explicitly isolates "**high-amount transactions with no payment track record**". SHAP confirms extremely strong fraud-direction contribution in this case. This demonstrates that "high amount = always fraud" is too simplistic; proper feature design can capture the underlying fraud structure.
-
-3. **`fraud_ratio_store_7d` (store fraud rate, past 7 days)** -- transactions at stores with recent fraud clusters push toward fraud; low-fraud-rate stores push toward legitimate. Temporal risk signals at the store level serve as effective auxiliary features.
+3. **Per-category fraud rate (past 7 days)** -- transactions in categories with recent fraud clusters push toward fraud; low-fraud-rate categories push toward legitimate. Temporal risk signals at the category level serve as effective auxiliary features.
 
 ## Usage
 
